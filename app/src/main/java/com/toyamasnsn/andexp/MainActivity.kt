@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.ContentProviderOperation
 import android.database.Cursor
 import android.os.Bundle
-import android.os.UserHandle
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.util.Log
@@ -24,9 +23,9 @@ class MainActivity : AppCompatActivity() {
 
     private val showContactPermission = constructPermissionsRequest(
         permissions = arrayOf(
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.WRITE_CONTACTS,
-//            Manifest.permission.READ_CALL_LOG,
+//            Manifest.permission.READ_CONTACTS,
+//            Manifest.permission.WRITE_CONTACTS,
+            Manifest.permission.READ_CALL_LOG,
         ),
         onShowRationale = ::onContactShowRationale,
         onPermissionDenied = ::onContactDenied,
@@ -54,11 +53,12 @@ class MainActivity : AppCompatActivity() {
         showContactPermission.launch()
 
         findViewById<View>(R.id.applyBatch).setOnClickListener {
-            applyBatch()
+//            applyBatch()
         }
 
         findViewById<View>(R.id.load).setOnClickListener {
-            load()
+//            load()
+            loadCalls()
         }
     }
 
@@ -121,14 +121,27 @@ class MainActivity : AppCompatActivity() {
         var op: ContentProviderOperation.Builder =
             ContentProviderOperation.newInsert(ContactsContract.RawContacts.CONTENT_URI)
                 .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, "com.toyamasnsn.andexp")
-                .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "yamada@andexp.htoyamasnsn.com")
-        ops.add(op.build())
+                .withValue(
+                    ContactsContract.RawContacts.ACCOUNT_NAME,
+                    "yamada@andexp.htoyamasnsn.com"
+                )
+//        ops.add(op.build())
 
         op = ContentProviderOperation.newInsert(ContactsContract.Settings.CONTENT_URI)
-            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
-            .withValue(ContactsContract.Data.MIMETYPE, ContactsContract.Settings.CONTENT_ITEM_TYPE)
+//            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+            .withValue(ContactsContract.RawContacts.ACCOUNT_TYPE, "com.toyamasnsn.andexp")
+            .withValue(ContactsContract.RawContacts.ACCOUNT_NAME, "yamada@andexp.htoyamasnsn.com")
             .withValue(ContactsContract.Settings.UNGROUPED_VISIBLE, 0)
+//            .withValue(
+//                ContactsContract.CommonDataKinds.GroupMembership.GROUP_SOURCE_ID,
+//                "group_source_id1"
+//            )
         ops.add(op.build())
+
+//        op = ContentProviderOperation.newInsert(ContactsContract.Settings.CONTENT_URI)
+//            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+//            .withValue(ContactsContract.Settings.UNGROUPED_VISIBLE, 0)
+//        ops.add(op.build())
 
         // Creates the display name for the new raw contact, as a StructuredName data row.
         op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
@@ -166,18 +179,18 @@ class MainActivity : AppCompatActivity() {
             .withValue(ContactsContract.CommonDataKinds.StructuredName.GIVEN_NAME, "GivenName2")
         ops.add(op.build())
 
-        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
-            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
-            .withValue(
-                ContactsContract.Data.MIMETYPE,
-                ContactsContract.CommonDataKinds.GroupMembership.MIMETYPE
-            )
-            .withValue(
-                ContactsContract.CommonDataKinds.GroupMembership.GROUP_SOURCE_ID,
-                "group_source_id1"
-            )
-//            .withValue(ContactsContract.Settings.UNGROUPED_VISIBLE, 1)
-        ops.add(op.build())
+//        op = ContentProviderOperation.newInsert(ContactsContract.Data.CONTENT_URI)
+//            .withValueBackReference(ContactsContract.Data.RAW_CONTACT_ID, 0)
+//            .withValue(
+//                ContactsContract.Data.MIMETYPE,
+//                ContactsContract.CommonDataKinds.GroupMembership.MIMETYPE
+//            )
+//            .withValue(
+//                ContactsContract.CommonDataKinds.GroupMembership.GROUP_SOURCE_ID,
+//                "group_source_id1"
+//            )
+////            .withValue(ContactsContract.Settings.UNGROUPED_VISIBLE, 1)
+//        ops.add(op.build())
 
         try {
             contentResolver.applyBatch(ContactsContract.AUTHORITY, ops)
@@ -191,17 +204,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadCalls() {
         val uri = CallLog.Calls.CONTENT_URI
-        val projection = arrayOf(
-            CallLog.Calls.NUMBER,
-            CallLog.Calls.TYPE,
-            CallLog.Calls.COUNTRY_ISO,
-        )
-        contentResolver.query(uri, projection, null, null, null)?.use { c ->
+//        val projection = arrayOf(
+//            CallLog.Calls.NUMBER,
+//            CallLog.Calls.TYPE,
+//            CallLog.Calls.COUNTRY_ISO,
+//        )
+        contentResolver.query(uri, null, null, null, null)?.use { c ->
+//        contentResolver.query(uri, projection, null, null, null)?.use { c ->
             c.moveToFirst()
             while (c.moveToNext()) {
                 val number = c.str(CallLog.Calls.NUMBER)
                 val type = c.int(CallLog.Calls.TYPE)
-                c
+                val name = c.str(CallLog.Calls.CACHED_NAME)
+                val location = c.str(CallLog.Calls.GEOCODED_LOCATION)
+                val country = c.str(CallLog.Calls.COUNTRY_ISO)
+                log("number = $number, type = $type, name = $name, country = $country, location = $location")
             }
         }
     }
